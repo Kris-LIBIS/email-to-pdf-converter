@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+usage() {
+  echo "Usage: $0 <input> <output>"
+  echo ""
+  echo "  <input> can be a file or a directory"
+  echo "  <output> should be a directory"
+  echo ""
+  echo "  if <input> is a directory, all *.msg files in it will be processed"
+  echo "  otherwise <input> should be a msg file"
+}
+
+convert_file() {
+  file="$(basename -- "$1")"
+  filename="${file%.*}"
+  java -jar /emailconverter/emailconverter.jar -q -hd -a -o "${TARGET}/${filename}.pdf" "$1"
+}
+
+[ -z "$1" ] && echo -e "ERROR: <input> missing\n" && usage && exit 1
+[ -z "$2" ] && echo -e "ERROR: <output> missing\n" && usage && exit 2
+
+SOURCE="$1"
+TARGET="$2"
+
+[ -d "$TARGET" ] || { echo -e "ERROR: Directory '$TARGET' does not exist\n"; usage; exit 3; }
+
+if [ -f "$SOURCE" ]
+then
+  convert_file "$SOURCE"
+elif [ -d "$SOURCE" ]
+then
+  for f in $SOURCE/*.msg
+  do
+    convert_file "$f"
+  done
+else
+  echo -e "ERROR: File '$SOURCE' does not exist or is not a directory of file\n"
+  usage
+  exit 4
+fi
