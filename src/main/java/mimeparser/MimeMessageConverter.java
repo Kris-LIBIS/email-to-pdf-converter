@@ -46,6 +46,9 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.io.FileWriter;
+import java.io.IOException;
+
 /**
  * Converts email (eml, msg) files into pdf files.
  * @author Nick Russler
@@ -114,7 +117,7 @@ public class MimeMessageConverter {
      * Convert an email (eml, msg) file to PDF.
      * @throws Exception
      */
-    public static void convertToPdf(String emailFilePath, String pdfOutputPath, boolean hideHeaders, boolean extractAttachments, String attachmentsdir, List<String> extParams) throws Exception {
+    public static void convertToPdf(String emailFilePath, String pdfOutputPath, boolean hideHeaders, boolean dumpHeaders, boolean extractAttachments, String attachmentsdir, List<String> extParams) throws Exception {
         Logger.info("Start converting %s to %s", emailFilePath, pdfOutputPath);
 
         final MimeMessage message;
@@ -316,6 +319,24 @@ public class MimeMessageConverter {
         if (tmpHtmlHeader != null) {
             if (!tmpHtmlHeader.delete()) {
                 tmpHtmlHeader.deleteOnExit();
+            }
+        }
+
+        /* ######### Dump headers ######### */
+        File dumpFile = new File(pdf.getParentFile(), Files.getNameWithoutExtension(pdfOutputPath) + ".headers");
+        if (dumpHeaders) {
+            Logger.info("Dumping headers");
+            try {
+                FileWriter writer = new FileWriter(dumpFile.getAbsolutePath());
+                writer.write(String.format("Subject: %s\n", subject));
+                writer.write(String.format("From: %s\n", from));
+                if (recipients.length > 0) {
+                    writer.write(String.format("To: %s\n", Joiner.on(", ").join(recipients)));
+                }
+                writer.write(String.format("Date: %s\n", sentDateStr));
+                writer.close();
+            } catch (IOException e) {
+                Logger.error("Could not dump headers to %s. Error: %s", dumpFile, Throwables.getStackTraceAsString(e));
             }
         }
 

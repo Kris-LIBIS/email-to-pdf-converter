@@ -120,7 +120,7 @@ public class Main {
         extParams.add(cli.getPageSize());
 
         try {
-            MimeMessageConverter.convertToPdf(in, out, cli.isHideHeaders(), cli.isExtractAttachments(), cli.getExtractAttachmentsDir(), extParams);
+            MimeMessageConverter.convertToPdf(in, out, cli.isHideHeaders(), cli.isDumpHeaders(), cli.isExtractAttachments(), cli.getExtractAttachmentsDir(), extParams);
         } catch (Exception e) {
             Logger.error("The email could not be converted. Error: %s", Throwables.getStackTraceAsString(e));
         }

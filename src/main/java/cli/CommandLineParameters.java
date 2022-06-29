@@ -53,6 +53,9 @@ public class CommandLineParameters {
     @Parameter(names = {"-hh", "--hide-headers"}, description = "Do not add email headers (subject, from, etc.) at the beginning of the PDF document.")
     private boolean hideHeaders = false;
 
+    @Parameter(names = {"-hd", "--dump-headers"}, description = "Dump headers (subject, from, etc.).")
+    private boolean dumpHeaders = false;
+
     @Parameter(names = {"-a", "--extract-attachments"}, description = "Extract Attachments.")
     private boolean extractAttachments = false;
 
@@ -127,6 +130,14 @@ public class CommandLineParameters {
 
     public void setHideHeaders(boolean hideHeaders) {
         this.hideHeaders = hideHeaders;
+    }
+
+    public boolean isDumpHeaders() {
+        return dumpHeaders;
+    }
+
+    public void setDumpHeaders(boolean dumpHeaders) {
+        this.dumpHeaders = dumpHeaders;
     }
 
     public boolean isVersion() {
