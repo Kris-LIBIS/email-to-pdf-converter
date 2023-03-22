@@ -27,6 +27,9 @@ import com.google.common.io.Resources;
 import org.apache.tika.mime.MimeTypes;
 import org.simplejavamail.api.email.AttachmentResource;
 import org.simplejavamail.converter.EmailConverter;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 import util.LogLevel;
 import util.Logger;
 import util.StringReplacer;
@@ -34,6 +37,16 @@ import util.StringReplacerCallback;
 
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeUtility;
+import javax.xml.crypto.dsig.TransformException;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -48,6 +61,7 @@ import java.util.regex.Pattern;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Converts email (eml, msg) files into pdf files.
@@ -152,6 +166,20 @@ public class MimeMessageConverter {
                 recipients = recipientsRaw.split(",");
                 for (int i = 0; i < recipients.length; i++) {
                     recipients[i] = MimeUtility.decodeText(recipients[i]);
+                }
+            } catch (Exception e) {
+                // ignore this error
+            }
+        }
+
+        String[] cc_recipients = new String[0];
+        String cc_recipientsRaw = message.getHeader("CC", null);
+        if (!Strings.isNullOrEmpty(cc_recipientsRaw)) {
+            try {
+                cc_recipientsRaw = MimeUtility.unfold(cc_recipientsRaw);
+                cc_recipients = cc_recipientsRaw.split(",");
+                for (int i = 0; i < cc_recipients.length; i++) {
+                    cc_recipients[i] = MimeUtility.decodeText(cc_recipients[i]);
                 }
             } catch (Exception e) {
                 // ignore this error
@@ -280,6 +308,10 @@ public class MimeMessageConverter {
                 headers += String.format(HEADER_FIELD_TEMPLATE, "To", HtmlEscapers.htmlEscaper().escape(Joiner.on(", ").join(recipients)));
             }
 
+            if (cc_recipients.length > 0) {
+                headers += String.format(HEADER_FIELD_TEMPLATE, "CC", HtmlEscapers.htmlEscaper().escape(Joiner.on(", ").join(cc_recipients)));
+            }
+
             if (!Strings.isNullOrEmpty(sentDateStr)) {
                 headers += String.format(HEADER_FIELD_TEMPLATE, "Date", HtmlEscapers.htmlEscaper().escape(sentDateStr));
             }
@@ -322,25 +354,9 @@ public class MimeMessageConverter {
             }
         }
 
-        /* ######### Dump headers ######### */
-        File dumpFile = new File(pdf.getParentFile(), Files.getNameWithoutExtension(pdfOutputPath) + ".headers");
-        if (dumpHeaders) {
-            Logger.info("Dumping headers");
-            try {
-                FileWriter writer = new FileWriter(dumpFile.getAbsolutePath());
-                writer.write(String.format("Subject: %s\n", subject));
-                writer.write(String.format("From: %s\n", from));
-                if (recipients.length > 0) {
-                    writer.write(String.format("To: %s\n", Joiner.on(", ").join(recipients)));
-                }
-                writer.write(String.format("Date: %s\n", sentDateStr));
-                writer.close();
-            } catch (IOException e) {
-                Logger.error("Could not dump headers to %s. Error: %s", dumpFile, Throwables.getStackTraceAsString(e));
-            }
-        }
-
         /* ######### Save attachments ######### */
+        int attachmentCount = 0;
+        String [] attachmentFilenames = new String[0];
         if (extractAttachments) {
             Logger.debug("Start extracting attachments");
 
@@ -356,9 +372,12 @@ public class MimeMessageConverter {
             Logger.info("Extract attachments to %s", attachmentDir.getAbsolutePath());
 
             List<AttachmentResource> attachments = EmailConverter.mimeMessageToEmail(message).getAttachments();
+            attachmentCount = attachments.size();
 
-            Logger.debug("Found %s attachments", attachments.size());
-            for (int i = 0; i < attachments.size(); i++) {
+            attachmentFilenames = new String[attachmentCount];
+
+            Logger.debug("Found %s attachments", attachmentCount);
+            for (int i = 0; i < attachmentCount; i++) {
                 File attachFile = null;
                 try {
                     Logger.debug("Process Attachment %s", i);
@@ -368,6 +387,7 @@ public class MimeMessageConverter {
                     String attachmentFilename = null;
                     try {
                         attachmentFilename = attachmentResource.getDataSource().getName();
+                        attachmentFilenames[i] = attachmentFilename;
                     } catch (Exception e) {
                         // ignore this error
                     }
@@ -401,6 +421,68 @@ public class MimeMessageConverter {
             }
         }
 
+        /* ######### Dump headers ######### */
+        File dumpFile = new File(pdf.getParentFile(), Files.getNameWithoutExtension(pdfOutputPath) + ".headers.xml");
+        if (dumpHeaders) {
+            Logger.info("Dumping headers");
+            try {
+                DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+                Document doc = builder.newDocument();
+                Element root = doc.createElement("emailheader");
+                doc.appendChild(root);
+
+                Element subjectElement = doc.createElement("subject");
+                subjectElement.setTextContent(subject);
+                root.appendChild(subjectElement);
+
+                Element fromElement = doc.createElement("from");
+                fromElement.setTextContent(from);
+                root.appendChild(fromElement);
+
+                if (recipients.length > 0) {
+                    Element toElement = doc.createElement("to");
+                    toElement.setTextContent(String.format("%s\n", Joiner.on(", ").join(recipients)));
+                    root.appendChild(toElement);
+                }
+
+                if (cc_recipients.length > 0) {
+                    Element ccElement = doc.createElement("cc");
+                    ccElement.setTextContent(String.format("%s\n", Joiner.on(", ").join(cc_recipients)));
+                    root.appendChild(ccElement);
+                }
+
+                Element dateElement = doc.createElement("date");
+                dateElement.setTextContent(sentDateStr);
+                root.appendChild(dateElement);
+
+                Element attachmentsElement = doc.createElement("attachments");
+                attachmentsElement.setAttribute("count", String.format("%d", attachmentCount));
+                root.appendChild(attachmentsElement);
+
+                for (int i = 0; i < attachmentCount; i++) {
+                    Element attachmentElement = doc.createElement("filename");
+                    attachmentElement.setTextContent(attachmentFilenames[i]);
+                    attachmentsElement.appendChild(attachmentElement);
+                }
+
+                FileOutputStream output = new FileOutputStream(dumpFile);
+                writeXml(doc, output);
+
+            } catch (IOException e) {
+                Logger.error("Could not dump headers to %s. Error: %s", dumpFile, Throwables.getStackTraceAsString(e));
+            }
+        }
+
         Logger.info("Conversion finished");
+    }
+
+    private static void writeXml(Document doc, OutputStream output) throws TransformerException {
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        Transformer transformer = transformerFactory.newTransformer();
+
+        DOMSource source = new DOMSource(doc);
+        StreamResult result = new StreamResult(output);
+
+        transformer.transform(source, result);
     }
 }
