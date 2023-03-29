@@ -26,11 +26,13 @@ TARGET="$2"
 
 if [ -f "$SOURCE" ]
 then
+  echo "Processing $(basename "$SOURCE")"
   convert_file "$SOURCE"
 elif [ -d "$SOURCE" ]
 then
   for f in $SOURCE/*.msg
   do
+    echo "Processing $(basename "$f")"
     convert_file "$f"
   done
 else
