@@ -50,10 +50,10 @@ public class CommandLineParameters {
     @Parameter(names = {"-v", "--version"}, description = "Print the version number.")
     private boolean version;
 
-    @Parameter(names = {"-hh", "--hide-headers"}, description = "Do not add email headers (subject, from, etc.) at the beginning of the PDF document.")
+    @Parameter(names = {"-hh", "--hide-headers"}, description = "Do not add email headers (subject, from, cc, etc.) at the beginning of the PDF document.")
     private boolean hideHeaders = false;
 
-    @Parameter(names = {"-hd", "--dump-headers"}, description = "Dump headers (subject, from, etc.).")
+    @Parameter(names = {"-hd", "--dump-headers"}, description = "Dump headers (subject, from, cc, etc.).")
     private boolean dumpHeaders = false;
 
     @Parameter(names = {"-a", "--extract-attachments"}, description = "Extract Attachments.")

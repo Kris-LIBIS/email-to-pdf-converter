@@ -21,7 +21,6 @@ import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.html.HtmlEscapers;
 import com.google.common.io.ByteStreams;
-import com.google.common.io.CharSink;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import org.apache.tika.mime.MimeTypes;
@@ -37,11 +36,9 @@ import util.StringReplacerCallback;
 
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeUtility;
-import javax.xml.crypto.dsig.TransformException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
@@ -59,7 +56,6 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 
