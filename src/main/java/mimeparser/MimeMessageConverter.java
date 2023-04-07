@@ -102,7 +102,7 @@ public class MimeMessageConverter {
     private static final int CONVERSION_DPI = 300;
     private static final int IMAGE_QUALITY = 100;
 
-    private static final DateFormat DATE_FORMATTER = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG);
+    private static final DateFormat DATE_FORMATTER = DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.SHORT);
 
     /**
      * Execute a command and redirect its output to the standard output.
