@@ -13,7 +13,7 @@ usage() {
 }
 
 JAVA_OPTS="-Duser.timezone=${DATE_TIMEZONE:-Europe/Brussels} -Duser.language=${DATE_LANGUAGE:-nl} -Duser.country=${DATE_COUNTRY:-BE}"
-CMD_OPTS="-d -hd -a"
+CMD_OPTS="-e -hd -a"
 
 CMD="java ${JAVA_OPTS} -jar /emailconverter/emailconverter.jar ${CMD_OPTS}"
 
