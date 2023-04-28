@@ -10,7 +10,7 @@ all: compile build push
 
 compile:
 	./gradlew shadowJar
-	cp ./build/libs/emailconverter*.jar container/emailconverter.jar
+	cp ./build/libs/email-to-pdf-converter-*.jar container/emailconverter.jar
 
 build:
 	docker build -t $(TAG) container
@@ -19,3 +19,6 @@ build:
 push:
 	docker push $(TAG)
 	docker push $(LATEST)
+
+test: compile
+	./gradlew check

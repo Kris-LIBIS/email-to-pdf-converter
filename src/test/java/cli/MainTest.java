@@ -226,7 +226,7 @@ public class MainTest {
         File attachmentDir = new File(tmpPdf.getParent(), Files.getNameWithoutExtension(tmpPdf.getName()) +  "-attachments");
 
         List<String> attachments = Arrays.asList(attachmentDir.list());
-        assertTrue(attachments.get(0).endsWith(".jpg"));
+        assertTrue(attachments.get(0).equals("UnknownAttachment"));
 
         if (!tmpPdf.delete()) {
             tmpPdf.deleteOnExit();

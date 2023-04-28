@@ -34,8 +34,8 @@ import util.Logger;
 import util.StringReplacer;
 import util.StringReplacerCallback;
 
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeUtility;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeUtility;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Transformer;
@@ -168,14 +168,14 @@ public class MimeMessageConverter {
             }
         }
 
-        String[] cc_recipients = new String[0];
-        String cc_recipientsRaw = message.getHeader("CC", null);
-        if (!Strings.isNullOrEmpty(cc_recipientsRaw)) {
+        String[] ccRecipients = new String[0];
+        String ccRecipientsRaw = message.getHeader("CC", null);
+        if (!Strings.isNullOrEmpty(ccRecipientsRaw)) {
             try {
-                cc_recipientsRaw = MimeUtility.unfold(cc_recipientsRaw);
-                cc_recipients = cc_recipientsRaw.split(",");
-                for (int i = 0; i < cc_recipients.length; i++) {
-                    cc_recipients[i] = MimeUtility.decodeText(cc_recipients[i]);
+                ccRecipientsRaw = MimeUtility.unfold(ccRecipientsRaw);
+                ccRecipients = ccRecipientsRaw.split(",");
+                for (int i = 0; i < ccRecipients.length; i++) {
+                    ccRecipients[i] = MimeUtility.decodeText(ccRecipients[i]);
                 }
             } catch (Exception e) {
                 // ignore this error
@@ -304,8 +304,8 @@ public class MimeMessageConverter {
                 headers += String.format(HEADER_FIELD_TEMPLATE, "To", HtmlEscapers.htmlEscaper().escape(Joiner.on(", ").join(recipients)));
             }
 
-            if (cc_recipients.length > 0) {
-                headers += String.format(HEADER_FIELD_TEMPLATE, "CC", HtmlEscapers.htmlEscaper().escape(Joiner.on(", ").join(cc_recipients)));
+            if (ccRecipients.length > 0) {
+                headers += String.format(HEADER_FIELD_TEMPLATE, "CC", HtmlEscapers.htmlEscaper().escape(Joiner.on(", ").join(ccRecipients)));
             }
 
             if (!Strings.isNullOrEmpty(sentDateStr)) {
@@ -441,9 +441,9 @@ public class MimeMessageConverter {
                     root.appendChild(toElement);
                 }
 
-                if (cc_recipients.length > 0) {
+                if (ccRecipients.length > 0) {
                     Element ccElement = doc.createElement("cc");
-                    ccElement.setTextContent(String.format("%s\n", Joiner.on(", ").join(cc_recipients)));
+                    ccElement.setTextContent(String.format("%s\n", Joiner.on(", ").join(ccRecipients)));
                     root.appendChild(ccElement);
                 }
 

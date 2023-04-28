@@ -19,8 +19,8 @@ package mimeparser;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import javax.mail.MessagingException;
-import javax.mail.internet.ContentType;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.ContentType;
 
 import org.junit.Test;
 

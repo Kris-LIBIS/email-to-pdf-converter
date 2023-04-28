@@ -29,8 +29,8 @@ import java.io.FileNotFoundException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 
-import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
