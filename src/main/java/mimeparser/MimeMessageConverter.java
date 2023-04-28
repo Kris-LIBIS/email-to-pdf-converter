@@ -356,6 +356,9 @@ public class MimeMessageConverter {
         if (extractAttachments) {
             Logger.debug("Start extracting attachments");
 
+            List<AttachmentResource> attachments = EmailConverter.mimeMessageToEmail(message).getAttachments();
+            attachmentCount = attachments.size();
+
             File attachmentDir;
             if (!Strings.isNullOrEmpty(attachmentsdir)) {
                 attachmentDir = new File(attachmentsdir);
@@ -363,12 +366,7 @@ public class MimeMessageConverter {
                 attachmentDir = new File(pdf.getParentFile(), Files.getNameWithoutExtension(pdfOutputPath) + "-attachments");
             }
 
-            attachmentDir.mkdirs();
-
             Logger.info("Extract attachments to %s", attachmentDir.getAbsolutePath());
-
-            List<AttachmentResource> attachments = EmailConverter.mimeMessageToEmail(message).getAttachments();
-            attachmentCount = attachments.size();
 
             attachmentFilenames = new String[attachmentCount];
 
@@ -403,6 +401,8 @@ public class MimeMessageConverter {
                         Logger.debug("Attachment %s did not hold any name, use random name", i);
                         attachFile = File.createTempFile("nameless-", extension, attachmentDir);
                     }
+
+                    attachmentDir.mkdirs();
 
                     try (FileOutputStream fos = new FileOutputStream(attachFile)) {
                         ByteStreams.copy(attachmentResource.getDataSourceInputStream(), fos);
