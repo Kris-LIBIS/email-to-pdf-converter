@@ -26,8 +26,6 @@ import com.google.common.io.Resources;
 import org.apache.tika.mime.MimeTypes;
 import org.simplejavamail.api.email.AttachmentResource;
 import org.simplejavamail.converter.EmailConverter;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
 import util.LogLevel;
 import util.Logger;
@@ -36,13 +34,6 @@ import util.StringReplacerCallback;
 
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeUtility;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -52,12 +43,17 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.Writer;
 
 /**
  * Converts email (eml, msg) files into pdf files.
@@ -186,6 +182,8 @@ public class MimeMessageConverter {
         try {
             Date sentDate = message.getSentDate();
             sentDateStr = DATE_FORMATTER.format(sentDate);
+            ZonedDateTime zonedDate = ZonedDateTime.ofInstant(sentDate.toInstant(), ZoneId.systemDefault());
+            sentDateStr = zonedDate.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -418,67 +416,39 @@ public class MimeMessageConverter {
         }
 
         /* ######### Dump headers ######### */
-        File dumpFile = new File(pdf.getParentFile(), Files.getNameWithoutExtension(pdfOutputPath) + ".headers.xml");
+        File dumpFile = new File(pdf.getParentFile(), Files.getNameWithoutExtension(pdfOutputPath) + ".headers.yml");
         if (dumpHeaders) {
             Logger.info("Dumping headers");
             try {
-                DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-                Document doc = builder.newDocument();
-                Element root = doc.createElement("emailheader");
-                doc.appendChild(root);
-
-                Element subjectElement = doc.createElement("subject");
-                subjectElement.setTextContent(subject);
-                root.appendChild(subjectElement);
-
-                Element fromElement = doc.createElement("from");
-                fromElement.setTextContent(from);
-                root.appendChild(fromElement);
-
+                Writer writer = new OutputStreamWriter(new FileOutputStream(dumpFile), "UTF-8");
+                PrintWriter printWriter = new PrintWriter(writer);
+                printWriter.println(String.format("subject: \"%s\"", subject.replaceAll("\"", "\\\"")));
+                printWriter.println(String.format("from: \"%s\"", from.replaceAll("\"", "\\\"")));
+                printWriter.println("to:");
                 if (recipients.length > 0) {
-                    Element toElement = doc.createElement("to");
-                    toElement.setTextContent(String.format("%s\n", Joiner.on(", ").join(recipients)));
-                    root.appendChild(toElement);
+                    for (String recipient : recipients) {
+                        printWriter.println(String.format("  - \"%s\"", recipient.replaceAll("^[ \t]+|[ \t]+$", "").replaceAll("\"", "\\\"")));
+                    }
                 }
-
                 if (ccRecipients.length > 0) {
-                    Element ccElement = doc.createElement("cc");
-                    ccElement.setTextContent(String.format("%s\n", Joiner.on(", ").join(ccRecipients)));
-                    root.appendChild(ccElement);
+                    printWriter.println("cc:");
+                    for (String recipient : ccRecipients) {
+                        printWriter.println(String.format("  - \"%s\"", recipient.replaceAll("^[ \t]+|[ \t]+$", "").replaceAll("\"", "\\\"")));
+                    }
                 }
-
-                Element dateElement = doc.createElement("date");
-                dateElement.setTextContent(sentDateStr);
-                root.appendChild(dateElement);
-
-                Element attachmentsElement = doc.createElement("attachments");
-                attachmentsElement.setAttribute("count", String.format("%d", attachmentCount));
-                root.appendChild(attachmentsElement);
-
-                for (int i = 0; i < attachmentCount; i++) {
-                    Element attachmentElement = doc.createElement("filename");
-                    attachmentElement.setTextContent(attachmentFilenames[i]);
-                    attachmentsElement.appendChild(attachmentElement);
+                printWriter.println(String.format("date: \"%s\"", sentDateStr));
+                if (attachmentFilenames.length > 0) {
+                    printWriter.println("attachments:");
+                    for (String attachment : attachmentFilenames) {
+                        printWriter.println(String.format("  - \"%s\"", attachment.replaceAll("\"", "\\\"")));
+                    }
                 }
-
-                FileOutputStream output = new FileOutputStream(dumpFile);
-                writeXml(doc, output);
-
+                printWriter.close();
             } catch (IOException e) {
                 Logger.error("Could not dump headers to %s. Error: %s", dumpFile, Throwables.getStackTraceAsString(e));
             }
         }
 
         Logger.info("Conversion finished");
-    }
-
-    private static void writeXml(Document doc, OutputStream output) throws TransformerException {
-        TransformerFactory transformerFactory = TransformerFactory.newInstance();
-        Transformer transformer = transformerFactory.newTransformer();
-
-        DOMSource source = new DOMSource(doc);
-        StreamResult result = new StreamResult(output);
-
-        transformer.transform(source, result);
     }
 }
